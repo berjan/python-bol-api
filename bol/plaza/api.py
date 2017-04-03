@@ -11,6 +11,11 @@ from xml.etree import ElementTree
 
 from .models import Orders, Payments, Shipments, ProcessStatus
 
+# shipments done by the seller
+SELLER_SHIPMENTS = "FBR"
+BOLCOM_SHIPMENTS = "FBB"
+ALL_SHIPMENTS = "ALL"
+
 
 __all__ = ['PlazaAPI']
 
@@ -143,11 +148,15 @@ class ShipmentMethods(MethodGroup):
     def __init__(self, api):
         super(ShipmentMethods, self).__init__(api, 'shipments')
 
-    def list(self, page=None):
+    def list(self, page=None, fulfilmentmethod=SELLER_SHIPMENTS):
         if page is not None:
             params = {'page': page}
         else:
-            params = None
+            params = {}
+
+        if fulfilmentmethod is not None:
+            params['fulfilmentmethod'] = fulfilmentmethod
+        
         xml = self.request('GET', params=params)
         return Shipments.parse(self.api, xml)
 
