@@ -17,7 +17,6 @@ SELLER_SHIPMENTS = "FBR"
 BOLCOM_SHIPMENTS = "FBB"
 ALL_SHIPMENTS = "ALL"
 
-# test commit buffer editor
 
 __all__ = ['PlazaAPI']
 
@@ -142,12 +141,12 @@ class OfferMethods(MethodGroup):
         xml = self.request('GET', '/{}'.format(EAN))
         return Offer.parse(self.api, xml, level=2)
 
-    def update(self, EAN, FulfillmentMethod):
+    def update(self, EAN, FulfillmentMethod, Price):
         xml = self.create_request_xml("UpsertRequest", 
                                       EAN=EAN, 
                                       FulfillmentMethod=FulfillmentMethod,
                                       Condition='NEW',
-                                      Price='27.95',
+                                      Price=Price,
                                      Description="",
                                      DeliveryCode='1-2d',
                                       Title="",
