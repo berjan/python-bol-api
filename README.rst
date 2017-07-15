@@ -3,6 +3,7 @@ python-bol-api
 ==============
 
 
+
 .. image:: https://badge.fury.io/py/python-bol-api.png
    :target: http://badge.fury.io/py/python-bol-api
 
