@@ -1,4 +1,5 @@
 import time
+import ipdb
 import requests
 import hmac
 import hashlib
@@ -9,7 +10,7 @@ from enum import Enum
 
 from xml.etree import ElementTree
 
-from .models import Orders, Payments, Shipments, ProcessStatus
+from .models import Offer, Orders, Payments, Shipments, ProcessStatus
 
 # shipments done by the seller
 SELLER_SHIPMENTS = "FBR"
@@ -69,25 +70,43 @@ class MethodGroup(object):
         self.group = group
 
     def request(self, method, path='', params={}, data=None):
-        uri = '/services/rest/{group}/{version}{path}'.format(
+        if self.group == "offers":
+            uri = '/{group}/{version}{path}'.format(
             group=self.group,
             version=self.api.version,
             path=path)
+        else:
+            uri = '/services/rest/{group}/{version}{path}'.format(
+                group=self.group,
+                version=self.api.version,
+                path=path)
         xml = self.api.request(method, uri, params=params, data=data)
         return xml
 
     def create_request_xml(self, root, **kwargs):
+        
         elements = self._create_request_xml_elements(1, **kwargs)
-        xml = """<?xml version="1.0" encoding="UTF-8"?>
-<{root} xmlns="https://plazaapi.bol.com/services/xsd/v2/plazaapi.xsd">
-{elements}
-</{root}>
-""".format(root=root, elements=elements)
+
+        if self.group == "offers":
+            xml = """
+            <UpsertRequest xmlns="https://plazaapi.bol.com/offers/xsd/api-2.0.xsd">
+               <RetailerOffer>
+               {elements}
+               </RetailerOffer>
+            </UpsertRequest>
+            """.format(elements=elements)
+        else:
+            xml = """<?xml version="1.0" encoding="UTF-8"?>
+                   <{root} xmlns="https://plazaapi.bol.com/services/xsd/v2/plazaapi.xsd">
+                   {elements}
+                   </{root}>
+                   """.format(root=root, elements=elements)
         return xml
 
     def _create_request_xml_elements(self, indent, **kwargs):
         # sort to make output deterministic
         kwargs = collections.OrderedDict(sorted(kwargs.items()))
+
         xml = ''
         for tag, value in kwargs.items():
             if value is not None:
@@ -111,6 +130,32 @@ class MethodGroup(object):
                     text=text
                 )
         return xml
+
+
+class OfferMethods(MethodGroup):
+
+    def __init__(self, api):
+        super(OfferMethods, self).__init__(api, 'offers')
+
+    def get(self, EAN):
+        xml = self.request('GET', '/{}'.format(EAN))
+        return Offer.parse(self.api, xml, level=2)
+
+    def update(self, EAN, FulfillmentMethod):
+        xml = self.create_request_xml("UpsertRequest", 
+                                      EAN=EAN, 
+                                      FulfillmentMethod=FulfillmentMethod,
+                                      Condition='NEW',
+                                      Price='27.95',
+                                     Description="",
+                                     DeliveryCode='1-2d',
+                                      Title="",
+                                     QuantityInStock=0,
+                                     Publish="true",
+                                     ReferenceCode=""
+                                     )
+        response = self.request('PUT', '/', data=xml)
+        return Offer.parse(self.api, response)
 
 
 class OrderMethods(MethodGroup):
@@ -208,6 +253,7 @@ class PlazaAPI(object):
         self.shipments = ShipmentMethods(self)
         self.process_status = ProcessStatusMethods(self)
         self.transports = TransportMethods(self)
+        self.offers = OfferMethods(self)
 
     def request(self, method, uri, params={}, data=None):
         content_type = 'application/xml; charset=UTF-8'
@@ -242,5 +288,8 @@ x-bol-date:{date}
             request_kwargs['data'] = data
         resp = requests.request(**request_kwargs)
         resp.raise_for_status()
-        tree = ElementTree.fromstring(resp.content)
+        if resp.content:
+            tree = ElementTree.fromstring(resp.content)
+        else:
+            tree = ElementTree.fromstring("<empty></empty>")
         return tree

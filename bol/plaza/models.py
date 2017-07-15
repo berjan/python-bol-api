@@ -58,10 +58,16 @@ class ModelField(Field):
 class Model(object):
 
     @classmethod
-    def parse(cls, api, xml):
+    def parse(cls, api, xml, level = 0):
         m = cls()
         m.xml = xml
-        for element in xml.getchildren():
+
+        if level == 2:
+            elements = xml.getchildren()[0].getchildren()[0].getchildren()
+        else:
+            elements = xml.getchildren()
+
+        for element in elements:
             tag = element.tag.partition('}')[2]
             field = getattr(m.Meta, tag, TextField())
             setattr(m, tag, field.parse(api, element, m))
@@ -97,6 +103,19 @@ class CustomerDetails(Model):
         ShipmentDetails = ModelField(ShipmentDetails)
         BillingDetails = ModelField(BillingDetails)
 
+class Offer(Model):
+
+    class Meta:
+        EAN = TextField()
+        Condition = TextField()
+        Price = DecimalField()
+        DeliveryCode = TextField()
+        QuantityInStock = TextField()
+        Publish = BooleanField()
+        ReferenceCode = TextField()
+        Description = TextField()
+        Title = TextField()
+        FulfillmentMethod = TextField()
 
 class OrderItem(Model):
 
