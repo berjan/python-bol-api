@@ -190,6 +190,18 @@ class Payments(ModelList):
     class Meta:
         item_type = Payment
 
+class Invoice(Model):
+
+    class Meta:
+        PaymentShipments = ModelField(PaymentShipments)
+        DateTimePayment = DateTimeField()
+        PaymentAmount = DecimalField()
+
+
+class Invoices(ModelList):
+
+    class Meta:
+        item_type = Invoice
 
 class ShipmentItem(Model):
 
