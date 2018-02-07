@@ -141,18 +141,18 @@ class OfferMethods(MethodGroup):
         xml = self.request('GET', '/{}'.format(EAN))
         return Offer.parse(self.api, xml, level=2)
 
-    def update(self, EAN, FulfillmentMethod, Price):
+    def update(self, EAN, FulfillmentMethod, Price, Description, DeliveryCode="24uurs-16", Title="", QuantityInStock=3, Publish="true", ReferenceCode=""):
         xml = self.create_request_xml("UpsertRequest", 
                                       EAN=EAN, 
                                       FulfillmentMethod=FulfillmentMethod,
                                       Condition='NEW',
                                       Price=Price,
-                                     Description="",
-                                     DeliveryCode='1-2d',
-                                      Title="",
-                                     QuantityInStock=0,
-                                     Publish="true",
-                                     ReferenceCode=""
+                                     Description=Description,
+                                     DeliveryCode=DeliveryCode,
+                                      Title=Title,
+                                     QuantityInStock=QuantityInStock,
+                                     Publish=Publish,
+                                     ReferenceCode=ReferenceCode
                                      )
         response = self.request('PUT', '/', data=xml)
         return Offer.parse(self.api, response)
